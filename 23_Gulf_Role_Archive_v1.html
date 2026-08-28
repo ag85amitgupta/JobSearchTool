@@ -177,19 +177,23 @@
 
   /* ---------- role card additions ---------- */
   .role-card.is-new{border-left-color:var(--green2);background:#FCFEFC;}
-  .role-card.below{opacity:.62;border-left-color:var(--g4);}
-  .role-card.actioned{opacity:.55;}
+  .role-card.below{opacity:.78;border-left-color:var(--g4);}
+  /* Actioned rows keep full contrast. The card edge and the pill carry the state,
+     not opacity - on the archive every row is actioned and dimming reads as disabled. */
+  .role-card.st-applied{border-left-color:var(--green2);}
+  .role-card.st-interviewing{border-left-color:#1565C0;}
+  .role-card.st-rejected,.role-card.st-notpursuing{border-left-color:#8E8880;}
   .rtag.new{background:var(--green2);color:#fff;}
   .rtag.seen{background:var(--g3);color:var(--g1);}
   .rtag.repost{background:#FDECEA;color:var(--rust-dk);}
   .rtag.board{background:#EFEAF6;color:#5B3E8E;}
   .score-badge.below{background:#B0AAA4;}
 
-  .status-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:9px;border-top:1px solid var(--g3);align-items:center;}
-  .status-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#BBB;margin-right:4px;}
-  .st-btn{border:1.5px solid var(--g4);background:var(--white);border-radius:20px;padding:3px 11px;font-family:var(--sans);font-size:10px;font-weight:600;color:var(--g1);cursor:pointer;transition:all .13s;}
+  .status-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--g3);align-items:center;}
+  .status-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#AAA;margin-right:5px;}
+  .st-btn{border:1.5px solid var(--g4);background:var(--white);border-radius:20px;padding:5px 14px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--g1);cursor:pointer;transition:all .13s;}
   .st-btn:hover{border-color:var(--rust);color:var(--rust);}
-  .st-btn.on{background:var(--black);border-color:var(--black);color:var(--white);}
+  .st-btn.on{background:var(--black);border-color:var(--black);color:var(--white);box-shadow:0 1px 5px rgba(0,0,0,.18);}
   .st-btn.on.applied{background:var(--green2);border-color:var(--green2);}
   .st-btn.on.rejected,.st-btn.on.dropped{background:#8E8880;border-color:#8E8880;}
   .st-btn.on.interviewing{background:#1565C0;border-color:#1565C0;}
@@ -222,6 +226,12 @@
   /* ---------- header link ---------- */
   .hdr-link{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#999;text-decoration:none;padding:5px 10px;border:1.5px solid #3A3A3A;border-radius:2px;transition:all .15s;}
   .hdr-link:hover{color:var(--white);border-color:var(--rust);}
+
+  /* ---------- gate: archive access before a candidate is chosen ---------- */
+  .gate-item{display:flex;flex-direction:column;gap:0;}
+  .gate-item .gate-btn{width:100%;}
+  .gate-archive{margin-top:9px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#AAA;text-decoration:none;align-self:flex-start;border-bottom:1px solid transparent;padding-bottom:1px;}
+  .gate-archive:hover{color:var(--rust);border-bottom-color:var(--rust);}
 </style>
 </head>
 <body>
@@ -456,7 +466,7 @@ function roleCard(r, opts) {
   var cls = ['role-card'];
   if (isNew) cls.push('is-new');
   if (opts.below) cls.push('below');
-  if (actioned && !opts.below) cls.push('actioned');
+  if (actioned) cls.push('st-' + slug(r.status));
 
   var tags = '';
   if (isNew) tags += '<span class="rtag new">New</span>';
