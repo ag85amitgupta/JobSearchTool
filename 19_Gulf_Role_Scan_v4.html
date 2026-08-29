@@ -174,6 +174,20 @@
   .notice .btn-inline:hover{border-color:#E65100;color:#E65100;}
   .notice.info{background:#EEF4FA;border-color:#CFE0F0;border-left-color:#1565C0;color:#12457E;}
   .notice.info .btn-inline{border-color:#B8D0E8;color:#12457E;}
+  /* Run note disclosure. Namespaced runnote-* - the stylesheet already uses
+     .gate as a candidate overlay and as a gate-flag modifier, and a bare
+     .note / .details / .method would collide the same way. */
+  .runnote{background:#EEF4FA;border:1px solid #CFE0F0;border-left:3px solid #1565C0;border-radius:2px;margin-bottom:12px;font-size:12px;color:#12457E;line-height:1.55;}
+  .runnote-summary{padding:12px 15px;cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;}
+  .runnote-summary::-webkit-details-marker{display:none;}
+  .runnote-summary::after{content:'\25be';margin-left:auto;font-size:10px;opacity:.6;transition:transform .15s;}
+  .runnote[open] .runnote-summary::after{transform:rotate(180deg);}
+  .runnote-head{font-weight:400;}
+  .runnote[open] .runnote-head{display:none;}
+  .runnote-body{padding:0 15px 14px;border-top:1px solid #CFE0F0;margin-top:2px;padding-top:12px;}
+  .runnote-para{margin:0 0 10px;line-height:1.6;}
+  .runnote-para:last-child{margin-bottom:0;}
+  .runnote-sub{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;opacity:.75;margin:14px 0 6px;}
 
   /* ---------- role card additions ---------- */
   .role-card.is-new{border-left-color:var(--green2);background:#FCFEFC;}
@@ -1197,14 +1211,15 @@ function buildBrief() {
     'WIND-UP: the 85% threshold cannot be measured directly \u2013 there is no token counter to read, so judge it. Wind up only when the session is genuinely near its limit, not when a board finishes and not out of caution. State it out loud, name the board you are on, and return what you have. Under-running the budget is a failed run: it costs a whole session and returns a fraction of the boards.',
     'BOARD STATE IS REQUIRED on every board in the list, including boards never reached. completed = the read cap was met or the board was genuinely exhausted. partial = started, stopped early. dropped_preflight = failed the check above. not_reached = the run wound up first. This is what the next run resumes from, and it cannot be inferred from the results \u2013 an empty board is a valid answer and reads identically to a board never opened.',
     '',
-    'RETURN THIS JSON ONLY \u2013 no preamble, no markdown fences:',
+    'RETURN THE JSON AS THE FINAL OUTPUT OF THE RUN, INSIDE A SINGLE FENCED CODE BLOCK. Progress commentary during the run is expected and is fine \u2013 it must not appear inside the block. Nothing follows the block. One block only.',
     '{',
     '  "candidate": "' + CAND + '",',
     '  "run_date": "' + todayStr() + '",',
     '  "read": 0,',
     '  "unscoreable": 0,',
     '  "reposts_skipped": 0,',
-    '  "note": "anything that limited the run",',
+    '  "note": "at most two sentences \u2013 only what limited the run or what Amit must decide. Nothing about method.",',
+    '  "method_notes": "board mechanics, selector and URL findings, query surface behaviour, rubric defects. Written for the next run, not for Amit.",',
     '  "wind_up_reason": "why the run ended \u2013 list exhausted, or wind-up called on which board",',
     '  "boards_run": [',
     boards.map(function (b, i) {
@@ -1231,6 +1246,17 @@ function buildBrief() {
     '}'
   ]);
   return L.join('\n');
+}
+
+/* The Runs tab has no method_notes column and adding one means a redeploy.
+   Method findings are appended to the note cell behind a marker instead - they
+   are what the next run resumes its method from and must not be dropped. */
+function runNoteForSheet() {
+  var typed = document.getElementById('run-note').value.trim();
+  var note = typed || (LAST_RUN && LAST_RUN.note) || '';
+  var meth = (LAST_RUN && LAST_RUN.method_notes) || '';
+  if (!meth) return note;
+  return (note ? note + '  ' : '') + 'METHOD: ' + meth;
 }
 
 /* ================= render ================= */
@@ -1271,8 +1297,18 @@ function render() {
 
   var nb = document.getElementById('run-notice');
   nb.innerHTML = '';
-  if (LAST_RUN && LAST_RUN.note) {
-    nb.innerHTML += '<div class="notice info"><span><b>Run note.</b> ' + esc(LAST_RUN.note) + '</span></div>';
+  if (LAST_RUN && (LAST_RUN.note || LAST_RUN.method_notes)) {
+    var note = LAST_RUN.note || '';
+    var meth = LAST_RUN.method_notes || '';
+    var head = note || meth;
+    var short = head.length > 140 ? esc(head.slice(0, 140).replace(/\s+\S*$/, '')) + '\u2026' : esc(head);
+    var body = (note ? '<p class="runnote-para">' + esc(note) + '</p>' : '') +
+               (meth ? '<div class="runnote-sub">Method</div><p class="runnote-para">' + esc(meth) + '</p>' : '');
+    nb.innerHTML +=
+      '<details class="runnote">' +
+        '<summary class="runnote-summary"><b>Run note.</b> <span class="runnote-head">' + short + '</span></summary>' +
+        '<div class="runnote-body">' + body + '</div>' +
+      '</details>';
   }
   if (LAST_RUN && (LAST_RUN.unscoreable || LAST_RUN.reposts_skipped)) {
     nb.innerHTML += '<div class="notice info"><span><b>' + (LAST_RUN.unscoreable || 0) +
@@ -1457,9 +1493,12 @@ function wire() {
     data.run_date = data.run_date || todayStr();
     PASTED = data;
     post(data).then(function () {
+      /* method_notes is optional. A payload written before the split carries
+         only 'note' and must load unchanged. */
       LAST_RUN = {
         run_date: data.run_date, read: data.read || data.results.length,
         returned: data.results.length, note: data.note || '',
+        method_notes: data.method_notes || '',
         unscoreable: data.unscoreable || 0, reposts_skipped: data.reposts_skipped || 0
       };
       return new Promise(function (r) { setTimeout(r, 2500); });
@@ -1495,7 +1534,7 @@ function wire() {
                r.score >= parseFloat(document.getElementById('floor').value);
       }).length,
       confirmed: confirmed ? '1' : '0',
-      note: document.getElementById('run-note').value.trim() || (LAST_RUN && LAST_RUN.note) || ''
+      note: runNoteForSheet()
     }).then(function (d) {
       btn.textContent = 'Write to the sheet'; btn.disabled = false;
       if (d && d.ok) toast(confirmed ? 'Day confirmed · ' + d.run_id : 'Run logged · ' + d.run_id);
