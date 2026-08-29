@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Role Scan – PiP_AGI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rust:#B5451B;--rust-lt:#F0D5CB;--rust-dk:#8B3315;
+    --black:#1A1A1A;--g1:#4A4A4A;--g2:#F5F3F1;--g3:#E8E4E0;--g4:#DDDDDD;
+    --white:#FFFFFF;--amber:#FFF8EE;--green:#EBF5EC;--green2:#2D7D32;
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'DM Sans',system-ui,sans-serif;
+    --mono:'DM Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#F2EFEB;font-family:var(--sans);color:var(--black);min-height:100vh;}
+
+  .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--black);color:var(--white);padding:14px 28px;border-radius:2px;border-left:4px solid var(--green2);font-size:13px;font-weight:500;z-index:600;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .35s;opacity:0;white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+  .toast.error{border-left-color:var(--rust);}
+
+  .page-header{background:var(--black);position:sticky;top:0;z-index:100;border-bottom:3px solid var(--rust);}
+  .header-inner{max-width:1400px;margin:0 auto;padding:18px 48px;display:flex;align-items:center;justify-content:space-between;}
+  .header-brand{display:flex;align-items:baseline;gap:16px;}
+  .brand-firm{font-family:var(--serif);font-size:18px;color:var(--white);font-weight:600;}
+  .brand-div{width:1px;height:14px;background:var(--rust);}
+  .brand-pip{font-size:11px;color:var(--rust);font-weight:600;letter-spacing:.12em;text-transform:uppercase;}
+  .header-tag{font-family:var(--mono);font-size:11px;color:#666;letter-spacing:.08em;text-transform:uppercase;}
+
+  .page-body{max-width:1400px;margin:0 auto;padding:44px 48px 80px;}
+  .page-title-block{margin-bottom:36px;padding-bottom:28px;border-bottom:1px solid var(--g4);}
+  .form-eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--rust);margin-bottom:10px;}
+  .form-title{font-family:var(--serif);font-size:42px;font-weight:700;line-height:1.05;margin-bottom:10px;}
+  .form-subtitle{font-size:15px;color:var(--g1);line-height:1.6;max-width:680px;}
+  .form-meta-row{display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;}
+  .form-meta-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--g1);}
+  .meta-dot{width:5px;height:5px;border-radius:50%;background:var(--rust);flex-shrink:0;}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
+
+  .form-section{margin-bottom:20px;background:var(--white);border-radius:2px;border:1px solid var(--g4);overflow:hidden;}
+  .section-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--g2);border-bottom:1px solid var(--g4);}
+  .section-num{width:24px;height:24px;background:var(--rust);color:var(--white);border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:12px;font-weight:600;flex-shrink:0;}
+  .section-title{font-family:var(--serif);font-size:15px;font-weight:600;}
+  .section-hint{margin-left:auto;font-size:11px;color:#999;font-style:italic;}
+  .section-body{padding:18px 20px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;}
+  .field-grid.single{grid-template-columns:1fr;}
+  .field-group{display:flex;flex-direction:column;gap:5px;}
+  .field-group.full{grid-column:1/-1;}
+  label{font-size:10px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:var(--g1);}
+  label .opt{color:#AAA;font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;margin-left:4px;}
+  .field-hint{font-size:11px;color:#AAA;line-height:1.4;margin-top:2px;}
+
+  input[type="text"],select,textarea{font-family:var(--sans);font-size:13px;color:var(--black);background:var(--white);border:1.5px solid var(--g4);border-radius:2px;padding:8px 11px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;appearance:none;-webkit-appearance:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--rust);box-shadow:0 0 0 3px rgba(181,69,27,.08);}
+  input::placeholder,textarea::placeholder{color:#C0BAB4;}
+  textarea{resize:vertical;line-height:1.55;font-family:var(--mono);font-size:11px;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A4A4A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;}
+
+  .tag-input-wrap{border:1.5px solid var(--g4);border-radius:2px;padding:6px 8px;min-height:40px;display:flex;flex-wrap:wrap;gap:5px;align-items:flex-start;cursor:text;background:var(--white);transition:border-color .15s,box-shadow .15s;}
+  .tag-input-wrap:focus-within{border-color:var(--rust);box-shadow:0 0 0 3px rgba(181,69,27,.08);}
+  .tag{display:inline-flex;align-items:center;gap:4px;background:var(--rust-lt);color:var(--rust-dk);border-radius:2px;padding:2px 7px 2px 8px;font-size:11px;font-weight:500;animation:tagIn .15s ease;}
+  @keyframes tagIn{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
+  .tag-remove{background:none;border:none;cursor:pointer;color:var(--rust);font-size:12px;line-height:1;padding:0;opacity:.6;}
+  .tag-remove:hover{opacity:1;}
+  .tag-input-field{border:none;outline:none;font-family:var(--sans);font-size:13px;flex:1;min-width:90px;background:transparent;padding:2px 0;}
+  .tag-input-field::placeholder{color:#C0BAB4;}
+
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .check-pill{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--g4);border-radius:2px;padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;background:var(--white);user-select:none;}
+  .check-pill:hover{border-color:var(--rust);}
+  .check-pill input{appearance:none;-webkit-appearance:none;width:13px;height:13px;border:1.5px solid var(--g4);border-radius:2px;margin:0;cursor:pointer;position:relative;flex-shrink:0;padding:0;}
+  .check-pill input:checked{background:var(--rust);border-color:var(--rust);}
+  .check-pill input:checked::after{content:'';position:absolute;left:3.5px;top:.5px;width:3px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .check-pill.on{border-color:var(--rust);background:#FCF6F3;}
+
+  .generate-row{padding-top:18px;border-top:2px solid var(--g4);margin-top:4px;}
+  .btn-generate{width:100%;padding:14px 24px;background:var(--rust);color:var(--white);border:none;border-radius:2px;font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:all .15s;}
+  .btn-generate:hover{background:var(--rust-dk);transform:translateY(-1px);box-shadow:0 4px 12px rgba(181,69,27,.28);}
+  .btn-secondary{width:100%;margin-top:9px;padding:11px 24px;background:var(--white);color:var(--g1);border:1.5px solid var(--g4);border-radius:2px;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .btn-secondary:hover{border-color:var(--rust);color:var(--rust);}
+
+  .output-empty{border:2px dashed var(--g4);border-radius:2px;padding:80px 40px;text-align:center;}
+  .empty-icon{font-size:40px;margin-bottom:16px;opacity:.25;}
+  .empty-title{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--g1);margin-bottom:8px;}
+  .empty-sub{font-size:13px;color:#AAA;line-height:1.65;max-width:340px;margin:0 auto;}
+
+  .output-error{display:none;background:var(--white);border:1.5px solid var(--rust);border-radius:2px;padding:28px;}
+  .output-error.visible{display:block;}
+  .error-title{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--rust);margin-bottom:8px;}
+  .error-body{font-size:13px;color:var(--g1);line-height:1.6;}
+
+  .output-results{display:none;}
+  .output-results.visible{display:block;}
+  .output-header{margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid var(--rust);}
+  .output-eyebrow{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--rust);margin-bottom:5px;}
+  .output-title{font-family:var(--serif);font-size:26px;font-weight:700;}
+  .output-meta{font-size:12px;color:#AAA;margin-top:3px;}
+  .export-row{display:flex;gap:8px;margin-top:10px;}
+  .btn-export{padding:6px 14px;background:var(--white);border:1.5px solid var(--g4);border-radius:2px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--g1);cursor:pointer;transition:all .15s;}
+  .btn-export:hover{border-color:var(--rust);color:var(--rust);}
+
+  .board-block{margin-bottom:34px;}
+  .board-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--rust);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+  .board-label::after{content:'';flex:1;height:1px;background:var(--rust-lt);}
+  .board-count{font-size:10px;font-weight:700;color:var(--rust);background:var(--rust-lt);border-radius:20px;padding:3px 9px;letter-spacing:.04em;flex-shrink:0;}
+
+  .role-card{background:var(--white);border:1px solid var(--g4);border-left:3px solid var(--rust);border-radius:2px;padding:14px 16px;margin-bottom:9px;transition:all .15s;}
+  .role-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .role-card.tier-high{border-left-color:var(--green2);}
+  .role-top{display:flex;align-items:flex-start;gap:12px;}
+  .score-badge{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--white);background:var(--rust);border-radius:2px;padding:5px 9px;line-height:1;flex-shrink:0;min-width:44px;text-align:center;}
+  .score-badge.high{background:var(--green2);}
+  .role-headline{flex:1;min-width:0;}
+  .role-title{font-size:14px;font-weight:600;line-height:1.35;}
+  .role-title a{color:var(--black);text-decoration:none;border-bottom:1px solid var(--rust-lt);}
+  .role-title a:hover{color:var(--rust);border-bottom-color:var(--rust);}
+  .role-employer{font-size:12px;color:var(--g1);margin-top:3px;}
+  .role-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .rtag{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:3px 8px;border-radius:20px;}
+  .rtag.lane-a{background:var(--green);color:var(--green2);}
+  .rtag.lane-b{background:#E3F2FD;color:#1565C0;}
+  .rtag.lane-c{background:var(--amber);color:#E65100;}
+  .rtag.meta{background:var(--g2);color:var(--g1);}
+  .rtag.gate{background:#FDECEA;color:var(--rust-dk);}
+  .role-why{font-size:12px;color:var(--g1);line-height:1.55;margin-top:9px;padding-top:9px;border-top:1px solid var(--g3);}
+  .comp-row{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;}
+  .comp{font-family:var(--mono);font-size:10px;color:#AAA;}
+  .comp b{color:var(--g1);font-weight:500;}
+  .board-none{background:var(--g2);border:1px dashed var(--g4);border-radius:2px;padding:18px;font-size:12px;color:#999;font-style:italic;text-align:center;}
+
+  .brief-block{background:var(--white);border:1px solid var(--g4);border-radius:2px;overflow:hidden;}
+  .brief-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--g2);border-bottom:1px solid var(--g4);}
+  .brief-label{font-size:11px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:var(--g1);}
+  .btn-copy{padding:5px 14px;background:var(--black);color:var(--white);border:none;border-radius:2px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .btn-copy:hover{background:var(--rust);}
+  .btn-copy.done{background:var(--green2);}
+  .brief-block textarea{border:none;border-radius:0;min-height:200px;}
+
+  .page-foot{max-width:1400px;margin:0 auto;padding:0 48px 48px;font-size:11px;color:#AAA;font-family:var(--mono);letter-spacing:.06em;}
+
+  @media(max-width:1080px){.two-col{grid-template-columns:1fr;gap:32px;}.page-body{padding:32px 24px 60px;}.header-inner{padding:16px 24px;}.form-title{font-size:32px;}.page-foot{padding:0 24px 32px;}}
+
+  /* ---------- candidate gate ---------- */
+  .candgate{position:fixed;inset:0;background:#F2EFEB;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;}
+  .candgate.hidden{display:none;}
+  .gate-eyebrow{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin-bottom:12px;}
+  .gate-title{font-family:var(--serif);font-size:46px;font-weight:700;line-height:1.05;margin-bottom:10px;text-align:center;}
+  .gate-sub{font-size:14px;color:var(--g1);margin-bottom:44px;text-align:center;max-width:460px;line-height:1.6;}
+  .gate-row{display:grid;grid-template-columns:1fr 1fr;gap:22px;width:100%;max-width:760px;}
+  .gate-btn{background:var(--white);border:1.5px solid var(--g4);border-left:5px solid var(--rust);border-radius:2px;padding:34px 30px;text-align:left;cursor:pointer;font-family:var(--sans);transition:all .18s;}
+  .gate-btn:hover{border-color:var(--rust);border-left-color:var(--rust);transform:translateY(-3px);box-shadow:0 8px 26px rgba(0,0,0,.09);}
+  .gate-btn-name{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1.1;margin-bottom:8px;}
+  .gate-btn-role{font-size:12px;color:var(--g1);line-height:1.55;}
+  .gate-btn-meta{font-family:var(--mono);font-size:10px;color:#AAA;letter-spacing:.06em;text-transform:uppercase;margin-top:14px;}
+  @media(max-width:720px){.gate-row{grid-template-columns:1fr;}.gate-title{font-size:34px;}}
+
+  /* ---------- candidate chip in header ---------- */
+  .cand-chip{display:inline-flex;align-items:center;gap:8px;background:var(--rust);color:var(--white);border-radius:2px;padding:5px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;cursor:pointer;font-family:var(--sans);}
+  .cand-chip:hover{background:var(--rust-dk);}
+  .cand-chip .sw{font-size:13px;line-height:1;opacity:.7;}
+
+  /* ---------- link buttons ---------- */
+  .btn-link{padding:8px 16px;background:var(--black);color:var(--white);border:none;border-radius:2px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s;}
+  .btn-link:hover{background:var(--rust);}
+
+  /* ---------- notices ---------- */
+  .notice{background:var(--amber);border:1px solid #F0DCC0;border-left:3px solid #E65100;border-radius:2px;padding:12px 15px;margin-bottom:12px;font-size:12px;color:#7A4400;line-height:1.55;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .notice b{font-weight:600;}
+  .notice .btn-inline{margin-left:auto;padding:5px 12px;background:var(--white);border:1.5px solid #E0B98A;border-radius:2px;font-family:var(--sans);font-size:11px;font-weight:600;color:#7A4400;cursor:pointer;white-space:nowrap;}
+  .notice .btn-inline:hover{border-color:#E65100;color:#E65100;}
+  .notice.info{background:#EEF4FA;border-color:#CFE0F0;border-left-color:#1565C0;color:#12457E;}
+  .notice.info .btn-inline{border-color:#B8D0E8;color:#12457E;}
+
+  /* ---------- role card additions ---------- */
+  .role-card.is-new{border-left-color:var(--green2);background:#FCFEFC;}
+  .role-card.below{opacity:.78;border-left-color:var(--g4);}
+  /* Actioned rows keep full contrast. The card edge and the pill carry the state,
+     not opacity - on the archive every row is actioned and dimming reads as disabled. */
+  .role-card.st-applied{border-left-color:var(--green2);}
+  .role-card.st-interviewing{border-left-color:#1565C0;}
+  .role-card.st-rejected,.role-card.st-notpursuing{border-left-color:#8E8880;}
+  .rtag.new{background:var(--green2);color:#fff;}
+  .rtag.seen{background:var(--g3);color:var(--g1);}
+  .rtag.repost{background:#FDECEA;color:var(--rust-dk);}
+  .rtag.board{background:#EFEAF6;color:#5B3E8E;}
+  .score-badge.below{background:#B0AAA4;}
+
+  .status-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--g3);align-items:center;}
+  .status-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#AAA;margin-right:5px;}
+  .st-btn{border:1.5px solid var(--g4);background:var(--white);border-radius:20px;padding:5px 14px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--g1);cursor:pointer;transition:all .13s;}
+  .st-btn:hover{border-color:var(--rust);color:var(--rust);}
+  .st-btn.on{background:var(--black);border-color:var(--black);color:var(--white);box-shadow:0 1px 5px rgba(0,0,0,.18);}
+  .st-btn.on.applied{background:var(--green2);border-color:var(--green2);}
+  .st-btn.on.rejected,.st-btn.on.dropped{background:#8E8880;border-color:#8E8880;}
+  .st-btn.on.interviewing{background:#1565C0;border-color:#1565C0;}
+  .st-btn.saving{opacity:.4;pointer-events:none;}
+
+  /* ---------- confirm block ---------- */
+  .confirm-block{background:var(--white);border:1px solid var(--g4);border-top:3px solid var(--rust);border-radius:2px;padding:20px;margin-top:30px;}
+  .confirm-title{font-family:var(--serif);font-size:17px;font-weight:600;margin-bottom:5px;}
+  .confirm-sub{font-size:12px;color:var(--g1);line-height:1.55;margin-bottom:16px;}
+  .radio-row{display:flex;flex-direction:column;gap:9px;margin-bottom:16px;}
+  .radio-pill{display:flex;align-items:flex-start;gap:10px;border:1.5px solid var(--g4);border-radius:2px;padding:11px 14px;cursor:pointer;transition:all .15s;background:var(--white);}
+
+  /* ---------- board addresses (prefixed pra- to avoid generic-class collision) ---------- */
+  .pra-wrap{margin-top:12px;border:1px solid var(--g3);border-radius:2px;background:var(--g2);padding:12px 14px;}
+  .pra-head{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--rust);margin-bottom:9px;}
+  .pra-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .pra-name{flex:0 0 150px;font-size:12px;font-weight:600;}
+  .pra-dom{flex:1;font-family:var(--mono);font-size:11px;padding:5px 8px;}
+  .pra-note{font-size:11px;color:#AAA;line-height:1.4;margin-top:6px;}
+  .pra-none{font-size:11px;color:#AAA;font-style:italic;}
+
+  /* ---------- pre-run dialog ---------- */
+  .prerun-ov{position:fixed;inset:0;background:rgba(26,26,26,.55);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .prerun-card{background:var(--white);border-radius:2px;border-top:4px solid var(--rust);max-width:600px;width:100%;max-height:88vh;overflow:auto;}
+  .prerun-hd{padding:18px 24px 4px;}
+  .prerun-ttl{font-family:var(--serif);font-size:22px;font-weight:700;}
+  .prerun-sub{font-size:12px;color:var(--g1);line-height:1.55;margin-top:6px;}
+  .prerun-bd{padding:16px 24px 22px;}
+  .prerun-grp{margin-bottom:20px;}
+  .prerun-lbl{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--g1);margin-bottom:9px;}
+  .prerun-opts{display:flex;flex-direction:column;gap:8px;}
+  .prerun-danger{border-color:#C62828!important;background:#FDF2F2!important;}
+  .prerun-danger .radio-txt{color:#B3261E;font-weight:700;}
+  .prerun-danger.on{box-shadow:0 0 0 3px rgba(198,40,40,.12);}
+  .prerun-warn{margin-top:9px;background:#FDF2F2;border-left:3px solid #C62828;padding:9px 12px;font-size:11px;color:#B3261E;line-height:1.5;display:none;}
+  .prerun-order{background:var(--g2);border:1px solid var(--g3);border-radius:2px;padding:11px 13px;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--black);}
+  .prerun-ft{display:flex;gap:10px;padding:0 24px 22px;}
+  .prerun-ft button{flex:1;}
+  .btn-plain{padding:13px 20px;background:var(--white);color:var(--g1);border:1.5px solid var(--g4);border-radius:2px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;}
+  .radio-pill:hover{border-color:var(--rust);}
+  .radio-pill.on{border-color:var(--rust);background:#FCF6F3;}
+  .radio-pill input{appearance:none;-webkit-appearance:none;width:14px;height:14px;border:1.5px solid var(--g4);border-radius:50%;margin:2px 0 0;cursor:pointer;flex-shrink:0;position:relative;}
+  .radio-pill input:checked{border-color:var(--rust);}
+  .radio-pill input:checked::after{content:'';position:absolute;left:2.5px;top:2.5px;width:6px;height:6px;border-radius:50%;background:var(--rust);}
+  .radio-txt{font-size:12px;font-weight:600;line-height:1.4;}
+  .radio-hint{font-size:11px;color:#AAA;font-weight:400;margin-top:2px;line-height:1.45;}
+
+  /* ---------- archive ---------- */
+  .filter-bar{background:var(--white);border:1px solid var(--g4);border-radius:2px;padding:16px 20px;margin-bottom:24px;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;}
+  .filter-group{display:flex;flex-direction:column;gap:6px;}
+  .stat-row{display:flex;gap:0;flex-wrap:wrap;background:var(--white);border:1px solid var(--g4);border-radius:2px;margin-bottom:24px;overflow:hidden;}
+  .stat{flex:1;min-width:110px;padding:14px 18px;border-right:1px solid var(--g4);}
+  .stat:last-child{border-right:none;}
+  .stat-n{font-family:var(--serif);font-size:26px;font-weight:700;line-height:1;}
+  .stat-l{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#AAA;margin-top:5px;}
+  .loading{padding:60px 20px;text-align:center;font-size:13px;color:#AAA;font-style:italic;}
+
+  /* ---------- header link ---------- */
+  .hdr-link{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#999;text-decoration:none;padding:5px 10px;border:1.5px solid #3A3A3A;border-radius:2px;transition:all .15s;}
+  .hdr-link:hover{color:var(--white);border-color:var(--rust);}
+
+  /* ---------- gate: archive access before a candidate is chosen ---------- */
+  .gate-item{display:flex;flex-direction:column;gap:0;}
+  .gate-item .gate-btn{width:100%;}
+  .gate-archive{margin-top:9px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#AAA;text-decoration:none;align-self:flex-start;border-bottom:1px solid transparent;padding-bottom:1px;}
+  .gate-archive:hover{color:var(--rust);border-bottom-color:var(--rust);}
+
+  /* ---------- home ---------- */
+  .home-row{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-bottom:34px;}
+  .home-card{background:var(--white);border:1px solid var(--g4);border-left:5px solid var(--rust);border-radius:2px;padding:30px 30px 26px;transition:all .18s;}
+  .home-card:hover{box-shadow:0 8px 26px rgba(0,0,0,.07);}
+  .home-name{font-family:var(--serif);font-size:36px;font-weight:700;line-height:1;}
+  .home-full{font-size:12px;color:#AAA;margin-top:5px;}
+  .home-role{font-size:13px;color:var(--g1);line-height:1.55;margin-top:14px;}
+  .home-meta{font-family:var(--mono);font-size:10px;color:#AAA;letter-spacing:.06em;text-transform:uppercase;margin-top:12px;}
+  .home-dossier{font-size:11px;color:var(--rust);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid var(--g3);}
+  .home-actions{display:flex;gap:9px;margin-top:20px;}
+  .home-primary{flex:1;text-align:center;padding:12px 18px;background:var(--rust);color:var(--white);border-radius:2px;font-size:13px;font-weight:600;letter-spacing:.03em;text-decoration:none;transition:all .15s;}
+  .home-primary:hover{background:var(--rust-dk);}
+  .home-secondary{flex:1;text-align:center;padding:12px 18px;background:var(--white);color:var(--g1);border:1.5px solid var(--g4);border-radius:2px;font-size:13px;font-weight:600;text-decoration:none;transition:all .15s;}
+  .home-secondary:hover{border-color:var(--rust);color:var(--rust);}
+  .home-note{background:var(--white);border:1px solid var(--g4);border-left:3px solid var(--g1);border-radius:2px;padding:18px 22px;font-size:12.5px;color:var(--g1);line-height:1.7;}
+  @media(max-width:820px){.home-row{grid-template-columns:1fr;}}
+
+  /* ---------- clear board ---------- */
+  .btn-danger{padding:6px 14px;background:var(--white);border:1.5px solid #D9B8AC;border-radius:2px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--rust-dk);cursor:pointer;transition:all .15s;}
+  .btn-danger:hover{background:var(--rust);border-color:var(--rust);color:var(--white);}
+  .btn-danger.arm{background:var(--rust);border-color:var(--rust);color:var(--white);}
+  .first-seen{font-family:var(--mono);font-size:10px;color:#AAA;letter-spacing:.03em;margin-top:8px;}
+  .first-seen b{color:var(--g1);font-weight:500;}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+  <!-- pre-run dialog. Answered before the brief is built, because once the brief
+       is copied the page is asleep until the JSON comes back. -->
+  <div class="prerun-ov" id="prerun-ov" style="display:none;">
+    <div class="prerun-card">
+      <div class="prerun-hd">
+        <div class="prerun-ttl">Before the run</div>
+        <div class="prerun-sub">The search happens in an AI session, not on this page. These two answers are carried into the brief – the page cannot ask again once you have copied it.</div>
+      </div>
+      <div class="prerun-bd">
+
+        <div class="prerun-grp">
+          <div class="prerun-lbl">Where this run starts</div>
+          <div class="prerun-opts" id="pr-start">
+            <label class="radio-pill"><input type="radio" name="prstart" value="restart"><span><span class="radio-txt">Restart at the top</span><span class="radio-hint" id="pr-restart-hint">Begins at the first board in priority order.</span></span></label>
+            <label class="radio-pill"><input type="radio" name="prstart" value="resume"><span><span class="radio-txt">Start from the last point of closure</span><span class="radio-hint" id="pr-resume-hint">Picks up at the first board the last run did not finish.</span></span></label>
+          </div>
+        </div>
+
+        <div class="prerun-grp">
+          <div class="prerun-lbl">When the board list is exhausted</div>
+          <div class="prerun-opts" id="pr-wrap">
+            <label class="radio-pill on"><input type="radio" name="prwrap" value="stop" checked><span><span class="radio-txt">Stop at the end of the list</span><span class="radio-hint">Ends cleanly once the last board is done, whatever budget is left.</span></span></label>
+            <label class="radio-pill prerun-danger"><input type="radio" name="prwrap" value="wrap"><span><span class="radio-txt">Wrap to the top and keep going</span><span class="radio-hint">Returns to the first board and continues until the session winds up.</span></span></label>
+          </div>
+          <div class="prerun-warn" id="pr-warn"><b>Maximum token usage.</b> Wrapping removes the natural stopping point – the run will consume the session until the wind-up threshold is reached. This resets to <i>stop</i> every time and is never remembered.</div>
+        </div>
+
+        <div class="prerun-grp">
+          <div class="prerun-lbl">Board order for this run</div>
+          <div class="prerun-order" id="pr-order">–</div>
+        </div>
+
+      </div>
+      <div class="prerun-ft">
+        <button class="btn-plain" id="pr-cancel">Cancel</button>
+        <button class="btn-generate" id="pr-go">Generate the brief</button>
+      </div>
+    </div>
+  </div>
+
+
+<div class="page-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <span class="brand-firm">Role Scan</span>
+      <span class="brand-div"></span>
+      <span class="brand-pip">PiP_AGI</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a class="hdr-link" id="hdr-home" href="index.html">&#8962; Home</a>
+      <a class="hdr-link" id="hdr-archive" href="#">Archive &rarr;</a>
+      <button class="cand-chip" id="cand-chip"><span id="cand-chip-name">–</span><span class="sw">⇄</span></button>
+      <span class="header-tag" id="hdr-date">–</span>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <div class="page-title-block">
+    <div class="form-eyebrow" id="pt-eyebrow">Live board</div>
+    <div class="form-title" id="pt-title">Role Scan</div>
+    <div class="form-subtitle" id="pt-sub">–</div>
+    <div class="form-meta-row">
+      <div class="form-meta-item"><span class="meta-dot"></span><span id="pt-m1">–</span></div>
+      <div class="form-meta-item"><span class="meta-dot"></span><span id="pt-m2">Top 10 open roles per board, highest score first</span></div>
+      <div class="form-meta-item"><span class="meta-dot"></span><span id="pt-m3">Actioned roles move to the archive</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- ============ LEFT: build the run ============ -->
+    <div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-num">1</span>
+          <span class="section-title">Target</span>
+          <span class="section-hint">what to look for</span>
+        </div>
+        <div class="section-body">
+          <div class="field-grid single">
+            <div class="field-group">
+              <label>Geographies</label>
+              <div class="tag-input-wrap" id="geo-wrap"><input type="text" class="tag-input-field" id="geo-input" placeholder="Type and press Enter"></div>
+              <span class="field-hint">City-level queries return different sets from country-level. Both are worth running. Everything on this page is saved per candidate in this browser.</span>
+            </div>
+            <div class="field-group">
+              <label>Search terms</label>
+              <div class="tag-input-wrap" id="role-wrap"><input type="text" class="tag-input-field" id="role-input" placeholder="Type and press Enter"></div>
+              <span class="field-hint" id="term-hint">–</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-num">2</span>
+          <span class="section-title">Scope</span>
+          <span class="section-hint">where and how far back</span>
+        </div>
+        <div class="section-body">
+          <div class="field-group">
+            <label>Boards <span class="opt">in priority order</span></label>
+            <div class="check-row" id="board-row"></div>
+            <input type="text" id="board-add" placeholder="Add a board by its address and press Enter – e.g. michaelpage.co.uk, reed.co.uk, efinancialcareers.ae" style="margin-top:9px;">
+            <span class="field-hint">Type the address, not the name – the address is what the search is allowed to reach. The label is derived from it and can be corrected below. Bayt is off by default and unassessed. Naukrigulf is JS-gated and returns nothing. Boards you add sort after the standard list. <a href="#" id="reset-setup" style="color:var(--rust);">Reset this setup to defaults</a>.</span>
+            <div class="pra-wrap">
+              <div class="pra-head">Addresses this run may reach</div>
+              <div id="pra-list"></div>
+              <div class="pra-note">Derived from the boards ticked above – nothing else is permitted. Each of these must be approved in Chrome, or the board is dropped at pre-flight and reported. Several addresses on one board go comma-separated.</div>
+            </div>
+          </div>
+          <div class="field-grid" style="margin-top:14px;">
+            <div class="field-group">
+              <label>Posted within</label>
+              <select id="window">
+                <option value="the past 24 hours">Past 24 hours</option>
+                <option value="the past 3 days">Past 3 days</option>
+                <option value="the past 7 days" selected>Past 7 days</option>
+                <option value="the past 30 days">Past 30 days</option>
+                <option value="any date">Any date</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Max reads per board</label>
+              <select id="cap">
+                <option value="15">15</option>
+                <option value="25" selected>25</option>
+                <option value="40">40</option>
+                <option value="60">60</option>
+              </select>
+              <span class="field-hint">Reading budget, not result count.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <span class="section-num">3</span>
+          <span class="section-title">Filter</span>
+          <span class="section-hint">what survives</span>
+        </div>
+        <div class="section-body">
+          <div class="field-grid">
+            <div class="field-group">
+              <label>Score floor</label>
+              <select id="floor"><option>6.5</option><option>7.0</option><option selected>7.5</option><option>8.0</option><option>8.5</option></select>
+              <span class="field-hint">A soft line, not a cut. Below-floor roles are shown greyed with the reason.</span>
+            </div>
+            <div class="field-group full">
+              <label>Grades in scope</label>
+              <div class="check-row" id="grade-row"></div>
+            </div>
+            <div class="field-group full">
+              <label>Lanes in scope</label>
+              <div class="check-row" id="lane-row"></div>
+            </div>
+            <div class="field-group full">
+              <label>Additional instruction <span class="opt">optional</span></label>
+              <input type="text" id="extra" placeholder="e.g. skip anything requiring Arabic">
+            </div>
+          </div>
+          <div class="generate-row">
+            <button class="btn-generate" id="brief-btn">Generate run brief</button>
+            <button class="btn-secondary" id="load-btn">Paste results</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="brief-section" style="display:none;">
+        <div class="section-header">
+          <span class="section-num">4</span>
+          <span class="section-title">Run brief</span>
+          <span class="section-hint">paste into a session with Chrome logged in</span>
+        </div>
+        <div class="section-body">
+          <div class="brief-block">
+            <div class="brief-header">
+              <span class="brief-label">Copy the whole block</span>
+              <button class="btn-copy" id="copy-brief">Copy</button>
+            </div>
+            <textarea id="brief-text" readonly></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="paste-section" style="display:none;">
+        <div class="section-header">
+          <span class="section-num">5</span>
+          <span class="section-title">Results</span>
+          <span class="section-hint">paste the JSON that came back</span>
+        </div>
+        <div class="section-body">
+          <textarea id="paste-text" placeholder='{"results":[ ... ]}' style="min-height:150px;"></textarea>
+          <div class="generate-row"><button class="btn-generate" id="render-btn">Save to sheet and render</button></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ RIGHT: the board ============ -->
+    <div>
+      <div class="loading" id="out-loading">Reading the sheet…</div>
+
+      <div class="output-error" id="out-error">
+        <div class="error-title">That did not go through</div>
+        <div class="error-body" id="error-body"></div>
+      </div>
+
+      <div class="output-empty" id="out-empty" style="display:none;">
+        <div class="empty-icon">◷</div>
+        <div class="empty-title">Nothing recorded yet</div>
+        <div class="empty-sub">Build a run brief, run it in a session with Chrome logged in, then paste the JSON back. Results land in the sheet and appear here.</div>
+      </div>
+
+      <div class="output-results" id="out-results">
+        <div class="output-header">
+          <div class="output-eyebrow">Live board</div>
+          <div class="output-title" id="out-title">–</div>
+          <div class="output-meta" id="out-meta">–</div>
+          <div class="export-row">
+            <button class="btn-export" id="exp-refresh">Refresh</button>
+            <button class="btn-export" id="exp-copy">Copy all</button>
+            <button class="btn-danger" id="exp-clear">Clear the board</button>
+            <a class="btn-link" id="link-archive" href="#" style="margin-left:auto;">Old listings →</a>
+          </div>
+        </div>
+        <div id="offline-bar"></div>
+        <div id="run-notice"></div>
+        <div id="boards-container"></div>
+
+        <div class="confirm-block" id="confirm-block" style="display:none;">
+          <div class="confirm-title">Confirm the list for the day</div>
+          <div class="confirm-sub">Writes the run to the <b>Runs</b> tab – date, boards, terms, read count and how many cleared the floor. The role rows are already saved; this records the run itself.</div>
+          <div class="radio-row" id="confirm-radio">
+            <label class="radio-pill on"><input type="radio" name="cf" value="yes" checked><span><span class="radio-txt">Confirmed – this is the list for today</span><span class="radio-hint">Logged with a timestamp. Use this when the run is finished and you are done adding to it.</span></span></label>
+            <label class="radio-pill"><input type="radio" name="cf" value="no"><span><span class="radio-txt">Log the run, not confirmed</span><span class="radio-hint">Records what was searched but leaves the day open – use when a board still has to be run.</span></span></label>
+          </div>
+          <div class="field-group">
+            <label>Note <span class="opt">optional</span></label>
+            <input type="text" id="run-note" placeholder="e.g. LinkedIn stalled at 12 reads, moved to GulfTalent">
+          </div>
+          <div class="generate-row"><button class="btn-generate" id="confirm-btn">Write to the sheet</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="page-foot" id="page-foot">–</div>
+
+
+<script>
+/* ================= CONFIG ================= */
+var CONFIG = {
+  EXEC: 'https://script.google.com/macros/s/AKfycbyAv06AZ9Zea9FAZM1gspDIp9u8ZTjnoEDRmvcy9_oaGESYroMB2Fh6y1nFk04xC4D8/exec',
+  PER_BOARD: 10,
+  HOME_PAGE: 'index.html',
+  SCAN_PAGE: '19_Gulf_Role_Scan_v2.html',
+  ARCHIVE_PAGE: '23_Gulf_Role_Archive_v1.html'
+};
+
+/* Write-through cache. The sheet is the record; this is so a Google outage,
+   a rotated deployment URL or a dropped connection degrades to stale data
+   rather than to a blank page. Never read in preference to a live response. */
+function cacheKey(cand) { return 'rolescan:' + cand; }
+function cacheSave(cand, payload) {
+  try { localStorage.setItem(cacheKey(cand), JSON.stringify({ at: new Date().toISOString(), payload: payload })); }
+  catch (e) { /* private mode or quota - the cache is optional */ }
+}
+function cacheRead(cand) {
+  try {
+    var raw = localStorage.getItem(cacheKey(cand));
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+var STATUSES = ['Open', 'Applied', 'Interviewing', 'Rejected', 'Not pursuing', 'Cleared'];
+
+/* Board priority. LinkedIn first, Bayt only on request.
+   A board is a NAME plus the ADDRESSES the search is allowed to reach. The name
+   is what is stored on the sheet and used in the dedupe key - it must not drift.
+   The addresses are what the run brief emits as its permitted-domain list. */
+var STD_BOARDS = [
+  { name: 'LinkedIn',          domains: 'linkedin.com' },
+  { name: 'GulfTalent',        domains: 'gulftalent.com' },
+  { name: 'Michael Page',      domains: 'michaelpage.ae, michaelpage.co.uk' },
+  { name: 'Bayt',              domains: 'bayt.com' },
+  { name: 'Reed',              domains: 'reed.co.uk' },
+  { name: 'eFinancialCareers', domains: 'efinancialcareers.ae' },
+  { name: 'Naukrigulf',        domains: 'naukrigulf.com' }
+];
+var BOARD_ORDER = STD_BOARDS.map(function (b) { return b.name; });
+
+/* Address -> label. michaelpage.ae -> Michaelpage. Cosmetic and editable;
+   it never reaches the dedupe key for a board that does not yet exist. */
+function labelFromDomain(d) {
+  var h = String(d).trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
+  var first = h.split('.')[0] || h;
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+function cleanDomains(v) {
+  return String(v || '').split(',').map(function (d) {
+    return d.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].toLowerCase();
+  }).filter(Boolean).join(', ');
+}
+
+var CANDIDATES = {
+  Amit: {
+    name: 'Amit Gupta',
+    role: 'AI strategy · technology governance · internal control',
+    meta: '18 yrs · Gulf + India · Manager to Director',
+    dossier: '17_Amit_Gupta_Candidate_Reference_Dossier_v3.md',
+    dossierReady: true,
+    provisional: false,
+    geos: ['UAE', 'Saudi Arabia', 'Dubai', 'Abu Dhabi', 'Riyadh'],
+    terms: ['AI governance', 'responsible AI', 'technology governance', 'internal control', 'IT audit', 'digital transformation', 'SAP S/4HANA', 'AI risk'],
+    boards: ['LinkedIn', 'GulfTalent', 'Michael Page'],
+    grades: ['Manager', 'Senior Manager', 'Associate Director', 'Director'],
+    lanes: ['A', 'B', 'C'],
+    laneNames: { A: 'A · AI &amp; digital transformation', B: 'B · SAP / ERP', C: 'C · Controls / IT audit / GRC' },
+    floor: '7.5'
+  },
+  Abhinav: {
+    name: 'Abhinav Sabharwal',
+    role: 'technology risk · cyber · regulatory assurance',
+    meta: '18 yrs EY · UK + Gulf · Director to Partner',
+    dossier: '22_Abhinav_Sabharwal_Candidate_Reference_Dossier_v1.md',
+    dossierReady: true,
+    provisional: true,
+    geos: ['United Kingdom', 'London', 'UAE', 'Saudi Arabia'],
+    terms: ['technology risk', 'cyber risk', 'operational resilience', 'DORA', 'SOX ICFR', 'IT audit', 'information security governance', 'third-party risk'],
+    boards: ['LinkedIn', 'Michael Page', 'GulfTalent'],
+    grades: ['Senior Manager', 'Associate Director', 'Director', 'Senior Director / VP', 'Partner / Managing Director'],
+    lanes: ['A', 'B', 'C'],
+    laneNames: { A: 'A · Technology risk &amp; cyber', B: 'B · Regulatory &amp; resilience', C: 'C · Audit / SOX / ICFR' },
+    floor: '7.5'
+  }
+};
+
+/* ================= transport ================= */
+/* Reads use JSONP. A cross-origin fetch to an Apps Script /exec follows a 302
+   to script.googleusercontent.com and fails CORS from a file:// or Pages origin.
+   A script tag has no such restriction. */
+function jsonp(params) {
+  return new Promise(function (resolve, reject) {
+    var cb = 'jscb_' + Math.random().toString(36).slice(2);
+    var s = document.createElement('script');
+    var timer = setTimeout(function () { done(); reject(new Error('The sheet did not respond within 25 seconds.')); }, 25000);
+    function done() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+      if (s.parentNode) s.parentNode.removeChild(s);
+    }
+    window[cb] = function (d) { done(); resolve(d); };
+    s.onerror = function () { done(); reject(new Error('Could not reach the sheet. Check the deployment URL.')); };
+    var qs = Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    s.src = CONFIG.EXEC + '?' + qs + '&callback=' + cb;
+    document.body.appendChild(s);
+  });
+}
+
+/* Writes that carry a large payload go by POST. Content-Type text/plain avoids
+   the CORS preflight; no-cors means the response is opaque, so every write is
+   verified by re-reading rather than by its own return value. */
+function post(body) {
+  return fetch(CONFIG.EXEC, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+}
+
+/* ================= helpers ================= */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function safeUrl(u) { u = String(u || ''); return /^https?:\/\//i.test(u) ? u : ''; }
+function todayStr() {
+  var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function getCandidate() {
+  var m = location.search.match(/[?&]c=([^&]+)/);
+  var c = m ? decodeURIComponent(m[1]) : '';
+  return CANDIDATES[c] ? c : '';
+}
+function toast(msg, isErr) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(function () { t.className = 'toast'; }, 3400);
+}
+function boardRank(b) {
+  var i = BOARD_ORDER.indexOf(b);
+  return i < 0 ? 99 : i;
+}
+function slug(s) { return String(s || '').toLowerCase().replace(/[^a-z]+/g, ''); }
+
+/* ================= card ================= */
+/* opts: {below:bool, newDate:'yyyy-mm-dd', showBoard:bool} */
+function roleCard(r, opts) {
+  opts = opts || {};
+  var url = safeUrl(r.url);
+  var isNew = opts.newDate && r.first_seen === opts.newDate;
+  var actioned = r.status && r.status !== 'Open';
+  var cls = ['role-card'];
+  if (isNew) cls.push('is-new');
+  if (opts.below) cls.push('below');
+  if (actioned) cls.push('st-' + slug(r.status));
+
+  var tags = '';
+  if (isNew) tags += '<span class="rtag new">New</span>';
+  if (r.lane) tags += '<span class="rtag lane-' + slug(r.lane) + '">Lane ' + esc(r.lane) + '</span>';
+  if (opts.showBoard) tags += '<span class="rtag board">' + esc(r.board) + '</span>';
+  if (r.location) tags += '<span class="rtag meta">' + esc(r.location) + '</span>';
+  if (r.posted) tags += '<span class="rtag meta">Posted ' + esc(r.posted) + '</span>';
+  if (r.applicants) tags += '<span class="rtag meta">' + esc(r.applicants) + ' applicants</span>';
+  if (Number(r.times_seen) > 1) tags += '<span class="rtag seen">Seen ' + esc(r.times_seen) + '&times;</span>';
+  if (String(r.notes || '').indexOf('repost') >= 0) tags += '<span class="rtag repost">Possible repost</span>';
+  (r.gate_flags || []).forEach(function (g) {
+    if (g && String(g).toLowerCase() !== 'none') tags += '<span class="rtag gate">' + esc(g) + '</span>';
+  });
+
+  var seen = '<div class="first-seen">First seen <b>' + esc(r.first_seen || '–') + '</b>' +
+    (r.last_seen && r.last_seen !== r.first_seen ? ' &middot; last seen <b>' + esc(r.last_seen) + '</b>' : '') +
+    (Number(r.times_seen) > 1 ? ' &middot; returned by <b>' + esc(r.times_seen) + '</b> runs' : ' &middot; one run') +
+    '</div>';
+
+  var comps = '';
+  ['functional', 'grade', 'adjacency', 'gates'].forEach(function (k) {
+    if (r[k] !== '' && r[k] != null) comps += '<span class="comp">' + k + ' <b>' + esc(r[k]) + '</b></span>';
+  });
+
+  var st = '<div class="status-row"><span class="status-label">Status</span>';
+  STATUSES.forEach(function (s) {
+    var on = (r.status || 'Open') === s;
+    st += '<button class="st-btn ' + slug(s) + (on ? ' on ' + slug(s) : '') +
+          '" data-key="' + esc(r.key) + '" data-status="' + esc(s) + '">' + esc(s) + '</button>';
+  });
+  if (r.status_date) st += '<span class="comp" style="margin-left:6px;">' + esc(r.status_date) + '</span>';
+  st += '</div>';
+
+  return '<div class="' + cls.join(' ') + '" data-key="' + esc(r.key) + '">' +
+    '<div class="role-top">' +
+      '<div class="score-badge ' + (opts.below ? 'below' : (Number(r.score) >= 8 ? 'high' : '')) + '">' +
+        esc(Number(r.score).toFixed(1)) + '</div>' +
+      '<div class="role-headline">' +
+        '<div class="role-title">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' : esc(r.title)) + '</div>' +
+        '<div class="role-employer">' + esc(r.employer) + '</div>' +
+        '<div class="role-tags">' + tags + '</div>' +
+      '</div>' +
+    '</div>' +
+    (r.why ? '<div class="role-why">' + esc(r.why) + '</div>' : '') +
+    (comps ? '<div class="comp-row">' + comps + '</div>' : '') +
+    seen +
+    st +
+  '</div>';
+}
+
+/* Delegated status handler. Uses a JSONP GET so the write is confirmable. */
+var OFFLINE = false;
+
+function bindStatus(container, onDone) {
+  container.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.st-btn') : null;
+    if (!b || b.classList.contains('saving')) return;
+    if (OFFLINE) { toast('The sheet is unreachable - status cannot be saved right now', true); return; }
+    var key = b.getAttribute('data-key'), status = b.getAttribute('data-status');
+    var row = b.parentNode;
+    Array.prototype.forEach.call(row.querySelectorAll('.st-btn'), function (x) { x.classList.add('saving'); });
+    jsonp({ action: 'status', key: key, status: status }).then(function (d) {
+      Array.prototype.forEach.call(row.querySelectorAll('.st-btn'), function (x) {
+        x.classList.remove('saving');
+        x.className = 'st-btn ' + slug(x.getAttribute('data-status'));
+      });
+      if (d && d.ok) {
+        b.className = 'st-btn ' + slug(status) + ' on ' + slug(status);
+        toast(status + ' – saved to the sheet');
+        if (onDone) onDone(key, status);
+      } else {
+        toast((d && d.error) || 'Could not save that status', true);
+      }
+    }).catch(function (err) {
+      Array.prototype.forEach.call(row.querySelectorAll('.st-btn'), function (x) { x.classList.remove('saving'); });
+      toast(err.message, true);
+    });
+  });
+}
+
+</script>
+<script>
+/* ================= state ================= */
+var CAND = getCandidate();
+var P = CANDIDATES[CAND] || null;
+var ALL = [];          // every role row for this candidate
+var LAST_RUN = null;   // {run_date, read, returned, note} from the last paste
+/* Resume state. The board column on the Runs tab is packed Name:state|Name:state
+   so no sheet column and no Apps Script change is needed. Four states:
+   completed | partial | dropped_preflight | not_reached. The resume point is the
+   first board in priority order that is not completed - absence of results cannot
+   be used, because an empty board is a valid answer. */
+var LAST_BOARD_STATES = null;
+var RUN_OPTS = { start: 'resume', wrap: 'stop' };
+
+function parseBoardStates(packed) {
+  if (!packed || String(packed).indexOf(':') < 0) return null;
+  var out = [];
+  String(packed).split('|').forEach(function (p) {
+    var i = p.lastIndexOf(':');
+    if (i > 0) out.push({ board: p.slice(0, i).trim(), state: p.slice(i + 1).trim() });
+  });
+  return out.length ? out : null;
+}
+function resumeBoard(list) {
+  if (!LAST_BOARD_STATES) return null;
+  var done = {};
+  LAST_BOARD_STATES.forEach(function (x) { if (x.state === 'completed') done[x.board] = 1; });
+  for (var i = 0; i < list.length; i++) { if (!done[list[i]]) return list[i]; }
+  return null;
+}
+function orderedRun(list) {
+  var seq = list.slice().sort(function (a, b) { return boardRank(a) - boardRank(b); });
+  if (RUN_OPTS.start !== 'resume') return seq;
+  var r = resumeBoard(seq);
+  if (!r) return seq;
+  var i = seq.indexOf(r);
+  return i <= 0 ? seq : seq.slice(i).concat(seq.slice(0, i));
+}
+var SHOW_ALL = {};     // board -> show below-floor rows too
+var PASTED = null;     // last pasted payload, kept so a failed save still renders
+var STALE = null;      // cache timestamp when rendering offline
+
+/* No candidate in the URL means this page was opened directly. Home is the gate. */
+if (!P) { location.replace(CONFIG.HOME_PAGE); }
+
+document.getElementById('cand-chip').addEventListener('click', function () {
+  location.href = CONFIG.HOME_PAGE;
+});
+
+/* ================= tag inputs ================= */
+function addTag(wrap, input, v) {
+  v = String(v || '').trim();
+  if (!v) return;
+  var t = document.createElement('span');
+  t.className = 'tag';
+  t.innerHTML = esc(v) + '<button class="tag-remove" type="button">&times;</button>';
+  t.querySelector('.tag-remove').addEventListener('click', function () { t.remove(); savePrefs(); });
+  wrap.insertBefore(t, input);
+}
+function initTag(inputId, wrapId, seed) {
+  var input = document.getElementById(inputId), wrap = document.getElementById(wrapId);
+  wrap.addEventListener('click', function (e) { if (e.target === wrap) input.focus(); });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault(); addTag(wrap, input, input.value); input.value = ''; savePrefs();
+    } else if (e.key === 'Backspace' && !input.value) {
+      var tags = wrap.querySelectorAll('.tag');
+      if (tags.length) tags[tags.length - 1].remove();
+    }
+  });
+  input.addEventListener('blur', function () { if (input.value.trim()) { addTag(wrap, input, input.value); input.value = ''; savePrefs(); } });
+  (seed || []).forEach(function (v) { addTag(wrap, input, v); });
+}
+function getTags(wrapId) {
+  return Array.prototype.map.call(document.getElementById(wrapId).querySelectorAll('.tag'), function (t) {
+    return t.textContent.replace(/×$/, '').trim();
+  }).filter(Boolean);
+}
+function getChecked(rowId) {
+  return Array.prototype.map.call(document.querySelectorAll('#' + rowId + ' input:checked'), function (i) { return i.value; });
+}
+function pillRow(rowId, items) {
+  document.getElementById(rowId).innerHTML = items.map(function (it) {
+    return '<label class="check-pill' + (it.on ? ' on' : '') + '"><input type="checkbox" value="' +
+      esc(it.value) + '"' + (it.on ? ' checked' : '') + '>' + it.label + '</label>';
+  }).join('');
+}
+
+/* ================= saved setup =================
+   Geographies, terms, boards and filters are per-candidate and persist in this
+   browser. Defaults in CANDIDATES are a starting point, not a constraint. */
+var PREFS_READY = false;
+function prefsKey() { return 'rolescan:prefs:' + CAND; }
+
+function savePrefs() {
+  if (!PREFS_READY) return;
+  try {
+    localStorage.setItem(prefsKey(), JSON.stringify({
+      geos: getTags('geo-wrap'),
+      terms: getTags('role-wrap'),
+      boards: getChecked('board-row'),
+      customBoards: CUSTOM_BOARDS,
+      boardDomains: BOARD_DOMAINS,
+      startPref: START_PREF,
+      grades: getChecked('grade-row'),
+      lanes: getChecked('lane-row'),
+      floor: document.getElementById('floor').value,
+      window: document.getElementById('window').value,
+      cap: document.getElementById('cap').value
+    }));
+  } catch (e) { /* private mode - setup simply will not persist */ }
+}
+
+function readPrefs() {
+  try { var r = localStorage.getItem(prefsKey()); return r ? JSON.parse(r) : null; }
+  catch (e) { return null; }
+}
+
+function clearPrefs() {
+  try { localStorage.removeItem(prefsKey()); } catch (e) {}
+  location.reload();
+}
+
+/* Boards the candidate has added that are not in the standard list.
+   Stored as plain names; their addresses live in BOARD_DOMAINS alongside any
+   edits made to the standard ones. */
+var CUSTOM_BOARDS = [];
+var BOARD_DOMAINS = {};
+var START_PREF = 'resume';
+
+/* v2 stored customBoards as bare strings with no address. Give them one so a
+   setup saved before this build still runs. */
+function migrateBoards(pf) {
+  CUSTOM_BOARDS = (pf.customBoards || []).map(function (b) {
+    return (b && typeof b === 'object') ? b.name : b;
+  }).filter(Boolean);
+  BOARD_DOMAINS = pf.boardDomains || {};
+  STD_BOARDS.forEach(function (b) {
+    if (!BOARD_DOMAINS[b.name]) BOARD_DOMAINS[b.name] = b.domains;
+  });
+  CUSTOM_BOARDS.forEach(function (n) {
+    if (!BOARD_DOMAINS[n]) BOARD_DOMAINS[n] = '';
+  });
+  START_PREF = pf.startPref || 'resume';
+}
+
+function allBoards() {
+  return BOARD_ORDER.concat(CUSTOM_BOARDS.filter(function (b) { return BOARD_ORDER.indexOf(b) < 0; }));
+}
+function domainsFor(b) { return BOARD_DOMAINS[b] || ''; }
+
+function paintBoards(selected) {
+  pillRow('board-row', allBoards().map(function (b) {
+    var d = domainsFor(b);
+    return {
+      value: b,
+      label: esc(b) + '<span class="opt" style="margin-left:6px;font-family:var(--mono);">' +
+             (d ? esc(d.split(',')[0].trim()) + (d.indexOf(',') > 0 ? ' +' + (d.split(',').length - 1) : '') : 'no address') + '</span>',
+      on: selected.indexOf(b) >= 0
+    };
+  }));
+  paintAddresses();
+}
+
+/* The address panel is the Chrome-approval checklist: it lists exactly the
+   boards ticked, and nothing else is permitted in the brief. */
+function paintAddresses() {
+  var sel = getChecked('board-row');
+  var host = document.getElementById('pra-list');
+  if (!host) return;
+  if (!sel.length) { host.innerHTML = '<div class="pra-none">No boards ticked.</div>'; return; }
+  host.innerHTML = sel.sort(function (a, b) { return boardRank(a) - boardRank(b); }).map(function (b) {
+    return '<div class="pra-row"><div class="pra-name">' + esc(b) + '</div>' +
+      '<input type="text" class="pra-dom" data-board="' + esc(b) + '" value="' + esc(domainsFor(b)) +
+      '" placeholder="address required"></div>';
+  }).join('');
+}
+
+/* Boards ticked but with no address cannot be reached and are not emitted. */
+function boardsWithAddress(list) {
+  return list.filter(function (b) { return !!domainsFor(b); });
+}
+function permittedDomains(list) {
+  var out = [];
+  list.forEach(function (b) {
+    domainsFor(b).split(',').forEach(function (d) { d = d.trim(); if (d && out.indexOf(d) < 0) out.push(d); });
+  });
+  return out;
+}
+
+/* ================= chrome ================= */
+function paintChrome() {
+  document.getElementById('cand-chip-name').textContent = P.name.split(' ')[0];
+  document.getElementById('hdr-date').textContent = todayStr();
+  document.getElementById('pt-title').textContent = P.name.split(' ')[0] + ' · live board';
+  document.getElementById('pt-sub').textContent = P.role.charAt(0).toUpperCase() + P.role.slice(1) + '. ' +
+    'Boards run in priority order: ' + P.boards.join(' → ') + '. Bayt only when those come back thin.';
+  document.getElementById('pt-m1').textContent = P.provisional
+    ? 'Dossier v1 \u2013 provisional, no calibration set yet'
+    : 'Scored against the dossier';
+  document.getElementById('term-hint').textContent =
+    'On LinkedIn these expand semantically off the profile, so near-synonyms return near-identical sets. Geography is the stronger lever.';
+  var archiveHref = CONFIG.ARCHIVE_PAGE + '?c=' + encodeURIComponent(CAND);
+  document.getElementById('link-archive').href = archiveHref;
+  document.getElementById('hdr-archive').href = archiveHref;
+  document.getElementById('page-foot').textContent =
+    'PiP_AGI · Role Scan v3 · ' + P.name + ' · results persist to the Job Search Tool Data sheet';
+  document.title = P.name.split(' ')[0] + ' · Role Scan';
+
+  var pf = readPrefs() || {};
+  migrateBoards(pf);
+
+  initTag('geo-input', 'geo-wrap', pf.geos || P.geos);
+  initTag('role-input', 'role-wrap', pf.terms || P.terms);
+  paintBoards(pf.boards || P.boards);
+  pillRow('grade-row', ['Consultant / Senior Consultant', 'Assistant Manager', 'Manager', 'Senior Manager',
+    'Associate Director', 'Director', 'Senior Director / VP', 'Partner / Managing Director'].map(function (g) {
+    return { value: g, label: esc(g.replace(' / Managing Director', ' / MD')), on: (pf.grades || P.grades).indexOf(g) >= 0 };
+  }));
+  pillRow('lane-row', ['A', 'B', 'C'].map(function (l) {
+    return { value: l, label: P.laneNames[l], on: (pf.lanes || P.lanes).indexOf(l) >= 0 };
+  }));
+  document.getElementById('floor').value = pf.floor || P.floor;
+  if (pf.window) document.getElementById('window').value = pf.window;
+  if (pf.cap) document.getElementById('cap').value = pf.cap;
+
+  // add a board that is not on the standard list
+  var bi = document.getElementById('board-add');
+  bi.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    var raw = bi.value.trim();
+    if (!raw) return;
+    var dom = cleanDomains(raw);
+    if (!dom || dom.indexOf('.') < 0) { toast('That is not an address – type the site, e.g. reed.co.uk', true); return; }
+    var name = labelFromDomain(dom.split(',')[0]);
+    var n = name, i = 2;
+    while (allBoards().indexOf(n) >= 0 && domainsFor(n) !== dom) { n = name + ' ' + i; i++; }
+    if (allBoards().indexOf(n) < 0) CUSTOM_BOARDS.push(n);
+    BOARD_DOMAINS[n] = dom;
+    var sel = getChecked('board-row'); if (sel.indexOf(n) < 0) sel.push(n);
+    paintBoards(sel);
+    bi.value = '';
+    savePrefs();
+    toast(n + ' added · ' + dom + ' – approve it in Chrome before the run');
+  });
+  document.getElementById('reset-setup').addEventListener('click', function (e) {
+    e.preventDefault(); clearPrefs();
+  });
+
+  PREFS_READY = true;
+
+  document.body.addEventListener('change', function (e) {
+    var p = e.target.closest ? e.target.closest('.check-pill,.radio-pill') : null;
+    if (!p) return;
+    if (p.classList.contains('radio-pill')) {
+      Array.prototype.forEach.call(p.parentNode.querySelectorAll('.radio-pill'), function (x) { x.classList.remove('on'); });
+      p.classList.add('on');
+    } else {
+      p.classList.toggle('on', e.target.checked);
+      if (p.parentNode && p.parentNode.id === 'board-row') paintAddresses();
+    }
+    savePrefs();
+  });
+
+  /* Address edits. Blank is allowed and simply drops the board from the run. */
+  document.getElementById('pra-list').addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || !t.classList || !t.classList.contains('pra-dom')) return;
+    var b = t.getAttribute('data-board');
+    BOARD_DOMAINS[b] = cleanDomains(t.value);
+    t.value = BOARD_DOMAINS[b];
+    savePrefs();
+    paintBoards(getChecked('board-row'));
+  });
+  ['floor', 'window', 'cap'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () { savePrefs(); if (id === 'floor') render(); });
+  });
+}
+
+/* ================= pre-run dialog ================= */
+function setRadio(rowId, val) {
+  Array.prototype.forEach.call(document.querySelectorAll('#' + rowId + ' .radio-pill'), function (p) {
+    var inp = p.querySelector('input');
+    var on = inp.value === val;
+    inp.checked = on;
+    p.classList.toggle('on', on);
+  });
+}
+
+function paintRunOrder() {
+  var ticked = getChecked('board-row');
+  var usable = boardsWithAddress(ticked);
+  var missing = ticked.filter(function (b) { return usable.indexOf(b) < 0; });
+  var seq = orderedRun(usable);
+  var host = document.getElementById('pr-order');
+  if (!seq.length) { host.innerHTML = 'No board has a usable address. Nothing would run.'; return; }
+  var txt = seq.join('  \u2192  ') + (RUN_OPTS.wrap === 'wrap' ? '  \u21ba  ' + seq[0] : '  \u2016  stop');
+  if (missing.length) txt += '<br><span style="color:#B3261E;">Not runnable, no address: ' + esc(missing.join(', ')) + '</span>';
+  host.innerHTML = txt;
+}
+
+function openPreRun() {
+  var seq = boardsWithAddress(getChecked('board-row')).sort(function (a, b) { return boardRank(a) - boardRank(b); });
+  var r = resumeBoard(seq);
+  document.getElementById('pr-restart-hint').textContent =
+    seq.length ? 'Begins at ' + seq[0] + '.' : 'Begins at the first board in priority order.';
+  document.getElementById('pr-resume-hint').textContent = r
+    ? 'The last run stopped short. Picks up at ' + r + '.'
+    : (LAST_BOARD_STATES ? 'The last run finished the list – this behaves as a restart.'
+                         : 'No run on record yet – this behaves as a restart.');
+  setRadio('pr-start', (r && START_PREF === 'resume') ? 'resume' : (START_PREF === 'resume' && !r ? 'restart' : START_PREF));
+  setRadio('pr-wrap', 'stop');            // never remembered
+  RUN_OPTS.start = document.querySelector('#pr-start input:checked').value;
+  RUN_OPTS.wrap = 'stop';
+  document.getElementById('pr-warn').style.display = 'none';
+  paintRunOrder();
+  document.getElementById('prerun-ov').style.display = 'flex';
+}
+
+/* ================= run brief ================= */
+function buildBrief() {
+  var geo = getTags('geo-wrap'), terms = getTags('role-wrap');
+  var boards = orderedRun(boardsWithAddress(getChecked('board-row')));
+  var lanes = getChecked('lane-row'), grades = getChecked('grade-row');
+  var win = document.getElementById('window').value;
+  var cap = document.getElementById('cap').value;
+  var floor = document.getElementById('floor').value;
+  var extra = document.getElementById('extra').value.trim();
+  var queries = geo.length * terms.length * boards.length;
+
+  var known = {};
+  ALL.forEach(function (r) { known[r.board + ' ' + r.job_id] = 1; });
+
+  var L = [
+    'ROLE SCAN \u2013 RUN BRIEF',
+    'Candidate: ' + P.name,
+    'Generated ' + todayStr(),
+    '',
+    'Read ' + P.dossier + ' before scoring. Use its rubric and weights exactly.',
+    (P.provisional
+      ? 'THAT DOSSIER IS v1 AND PROVISIONAL. Sections 9 to 13 are marked [OPEN] and unconfirmed, and the calibration set is empty. Do not discard a posting on any [OPEN] field \u2013 score it neutrally and name the field in gate_flags. Return the top ' + CONFIG.PER_BOARD + ' per board whether or not they clear the floor.'
+      : ''),
+    '',
+    'BOARDS, IN THE ORDER THEY ARE TO BE RUN: ' + boards.join(' \u2192 '),
+    (RUN_OPTS.start === 'resume' && resumeBoard(boards.slice().sort(function (a, b) { return boardRank(a) - boardRank(b); }))
+      ? 'THIS IS A RESUMED RUN. The previous run did not finish the list. Start at ' + boards[0] + '.'
+      : 'This run starts at the top of the list.'),
+    'WHEN THE LIST IS EXHAUSTED: ' + (RUN_OPTS.wrap === 'wrap'
+      ? 'wrap to the first board and keep going until the wind-up threshold is reached.'
+      : 'stop cleanly. Do not start a second pass over boards already completed.'),
+    '',
+    'PERMITTED ADDRESSES \u2013 navigate to these and nothing else:',
+    permittedDomains(boards).map(function (d) { return '  \u00b7 ' + d; }).join('\n'),
+    'This list is derived from the boards ticked on the scan page. Do not substitute a different site, do not follow a posting out to an employer domain to read it, and do not open the scan tool, the sheet or the Apps Script endpoint at any point.',
+    '',
+    'PRE-FLIGHT \u2013 DO THIS FIRST, BEFORE ANY SEARCHING:',
+    'Open each address above in turn and confirm it is reachable and logged in. Deal with any browser permission prompt at this stage. If a board is unreachable, not logged in, or its permission is refused, DROP THAT BOARD, record it as dropped_preflight, and carry on with the ones that passed \u2013 do not stop and do not wait. Report the full pre-flight result before the first search runs.',
+    '',
+    'GEOGRAPHIES: ' + geo.join(' \u00b7 '),
+    'SEARCH TERMS: ' + terms.join(' \u00b7 '),
+    'LANES IN SCOPE: ' + lanes.join(' \u00b7 '),
+    'GRADES IN SCOPE: ' + (grades.length ? grades.join(' \u00b7 ') : 'not specified'),
+    'POSTED WITHIN: ' + win,
+    'MAX POSTINGS READ PER BOARD: ' + cap,
+    'SCORE FLOOR: ' + floor,
+    'ALREADY IN THE DATABASE: ' + Object.keys(known).length + ' postings for this candidate. Re-reading one is not wasted \u2013 return it and the sheet will increment its seen count rather than duplicate it.',
+    '',
+    'SCOPE ARITHMETIC: ' + geo.length + ' geographies \u00d7 ' + terms.length + ' terms \u00d7 ' + boards.length +
+      ' boards = ' + queries + ' queries. At ' + cap + ' reads per board that is up to ' + (cap * boards.length) +
+      ' postings opened. If that will not complete, run the boards in the order given and stop cleanly rather than thinning every board.',
+    (RUN_OPTS.wrap === 'wrap' ? 'NOTE: wrap-around is on for this run. Expect maximum consumption.' : '')
+  ];
+  L = L.filter(function (x, i) { return x !== '' || L[i - 1] !== ''; });
+  if (extra) L.push('ADDITIONAL: ' + extra);
+
+  L = L.concat([
+    '',
+    'METHOD',
+    '1. Work the boards in the order listed. Finish one before starting the next.',
+    '2. On LinkedIn, click the card in the results list, or DOM-click by job id: document.querySelector(\'li[data-occludable-job-id="ID"] a\').click(). Direct /jobs/view/ URLs select the card but never load the detail pane. The list is virtualised \u2013 scroll the container before extracting.',
+    '3. On GulfTalent, apply the Easy Apply facet. Without it roughly 94% of postings carry no JD and cannot be scored.',
+    '4. Open and read each posting in full. Never score from a search-result snippet.',
+    '5. Skip aggregator and staffing reposts (Jobs Ai, Hire Feed, TALENTMATE and similar). Count them and report the number.',
+    '6. Return the top ' + CONFIG.PER_BOARD + ' per board by score, whether or not they clear the floor. Mark anything below ' + floor + ' with what blocked it in gate_flags. Do not pad and do not invent \u2013 fewer than ' + CONFIG.PER_BOARD + ' is a valid answer and an empty board is a valid answer.',
+    '7. Report anything that could not be opened as unscoreable. Unscoreable is not unsuitable.',
+    '8. "posted" and "applicants" are REQUIRED on every row where the board shows them \u2013 they are how staleness and competition are judged on the board. Use the board\u2019s own wording ("2 days ago", "100+ applicants"). Write "not shown" only where the board genuinely does not display it. Never leave either blank and never estimate.',
+    '',
+    'IF A BOARD STALLS: move to the next board in the order and come back if there is budget. Results are what matter.',
+    '',
+    'WIND-UP: the 85% threshold cannot be measured directly \u2013 there is no token counter to read. Judge it, call it out loud the moment it is reached, name the board you are on, and return what you have. Do not push one more board. A short honest run beats a truncated payload.',
+    'BOARD STATE IS REQUIRED on every board in the list, including boards never reached. completed = the read cap was met or the board was genuinely exhausted. partial = started, stopped early. dropped_preflight = failed the check above. not_reached = the run wound up first. This is what the next run resumes from, and it cannot be inferred from the results \u2013 an empty board is a valid answer and reads identically to a board never opened.',
+    '',
+    'RETURN THIS JSON ONLY \u2013 no preamble, no markdown fences:',
+    '{',
+    '  "candidate": "' + CAND + '",',
+    '  "run_date": "' + todayStr() + '",',
+    '  "read": 0,',
+    '  "unscoreable": 0,',
+    '  "reposts_skipped": 0,',
+    '  "note": "anything that limited the run",',
+    '  "wind_up_reason": "why the run ended \u2013 list exhausted, or wind-up called on which board",',
+    '  "boards_run": [',
+    boards.map(function (b, i) {
+      return '    {"board": "' + b + '", "state": "completed | partial | dropped_preflight | not_reached", "read": 0}' +
+             (i < boards.length - 1 ? ',' : '');
+    }).join('\n'),
+    '  ],',
+    '  "results": [',
+    '    {',
+    '      "board": "LinkedIn",',
+    '      "title": "",',
+    '      "employer": "",',
+    '      "location": "",',
+    '      "url": "",',
+    '      "lane": "A",',
+    '      "score": 0.0,',
+    '      "components": {"functional":0.0,"grade":0.0,"adjacency":0.0,"gates":0.0},',
+    '      "why": "one sentence naming the specific thing in the posting that produced the score",',
+    '      "gate_flags": [],',
+    '      "posted": "",',
+    '      "applicants": ""',
+    '    }',
+    '  ]',
+    '}'
+  ]);
+  return L.join('\n');
+}
+
+/* ================= render ================= */
+function render() {
+  var loading = document.getElementById('out-loading');
+  var results = document.getElementById('out-results');
+  var empty = document.getElementById('out-empty');
+  loading.style.display = 'none';
+
+  var open = ALL.filter(function (r) { return (r.status || 'Open') === 'Open'; });
+  if (!ALL.length) {
+    empty.style.display = '';
+    results.classList.remove('visible');
+    return;
+  }
+  empty.style.display = 'none';
+  results.classList.add('visible');
+
+  var floor = parseFloat(document.getElementById('floor').value) || 7.5;
+  var newDate = LAST_RUN ? LAST_RUN.run_date : null;
+  var newCount = newDate ? ALL.filter(function (r) { return r.first_seen === newDate; }).length : 0;
+
+  document.getElementById('out-title').textContent =
+    open.length + ' open · ' + ALL.length + ' recorded';
+  document.getElementById('out-meta').textContent = LAST_RUN
+    ? ('Last run ' + LAST_RUN.run_date + ' · ' + LAST_RUN.read + ' postings read · ' + newCount + ' new')
+    : 'Loaded from the sheet';
+
+  // run-level notice
+  var ob = document.getElementById('offline-bar');
+  ob.innerHTML = OFFLINE
+    ? ('<div class="notice"><span><b>The sheet is unreachable.</b> ' +
+       (STALE ? 'Showing the last copy this browser held, saved ' + esc(STALE.slice(0, 16).replace('T', ' ')) + '. '
+              : 'Showing the payload you pasted, unsaved. ') +
+       'Status buttons are disabled and nothing new is being written. Reload once Google responds.</span>' +
+       '<button class="btn-inline" id="retry-btn">Try again</button></div>')
+    : '';
+
+  var nb = document.getElementById('run-notice');
+  nb.innerHTML = '';
+  if (LAST_RUN && LAST_RUN.note) {
+    nb.innerHTML += '<div class="notice info"><span><b>Run note.</b> ' + esc(LAST_RUN.note) + '</span></div>';
+  }
+  if (LAST_RUN && (LAST_RUN.unscoreable || LAST_RUN.reposts_skipped)) {
+    nb.innerHTML += '<div class="notice info"><span><b>' + (LAST_RUN.unscoreable || 0) +
+      '</b> could not be opened and were not scored · <b>' + (LAST_RUN.reposts_skipped || 0) +
+      '</b> aggregator reposts skipped. Unscoreable is not unsuitable.</span></div>';
+  }
+
+  // group by board
+  var byBoard = {};
+  open.forEach(function (r) { (byBoard[r.board] = byBoard[r.board] || []).push(r); });
+  var boards = Object.keys(byBoard).sort(function (a, b) { return boardRank(a) - boardRank(b); });
+
+  var html = '';
+  boards.forEach(function (b) {
+    var rows = byBoard[b].sort(function (x, y) { return y.score - x.score; });
+    var above = rows.filter(function (r) { return r.score >= floor; });
+    var showAll = !!SHOW_ALL[b];
+    var shown = (showAll ? rows : above).slice(0, CONFIG.PER_BOARD);
+
+    html += '<div class="board-block"><div class="board-label">' + esc(b) +
+      '<span class="board-count">' + shown.length + ' shown</span></div>';
+
+    if (!showAll && above.length < CONFIG.PER_BOARD) {
+      html += '<div class="notice"><span><b>' + above.length + '</b> of ' + rows.length +
+        ' open ' + esc(b) + ' roles are at or above ' + floor.toFixed(1) +
+        '. Show the rest to fill ' + CONFIG.PER_BOARD + ' slots?</span>' +
+        '<button class="btn-inline" data-showall="' + esc(b) + '">Show all ' +
+        Math.min(rows.length, CONFIG.PER_BOARD) + '</button></div>';
+    }
+    if (showAll) {
+      html += '<div class="notice info"><span>Showing below-floor roles, greyed, with what blocked them.</span>' +
+        '<button class="btn-inline" data-hideall="' + esc(b) + '">Above ' + floor.toFixed(1) + ' only</button></div>';
+    }
+
+    if (!shown.length) {
+      html += '<div class="board-none">Nothing open on this board.</div>';
+    } else {
+      shown.forEach(function (r) {
+        html += roleCard(r, { below: r.score < floor, newDate: newDate });
+      });
+    }
+    html += '</div>';
+  });
+
+  document.getElementById('boards-container').innerHTML = html;
+  document.getElementById('confirm-block').style.display = LAST_RUN ? '' : 'none';
+}
+
+/* Packs Name:state|Name:state for the Runs tab. Takes the states the AI session
+   reported; anything it did not mention is recorded not_reached rather than
+   guessed from whether results came back. */
+function packBoardStates(boards) {
+  var declared = {};
+  if (PASTED && PASTED.boards_run) {
+    (PASTED.boards_run || []).forEach(function (b) {
+      if (b && b.board) declared[b.board] = b.state || 'partial';
+    });
+  }
+  return boards.map(function (b) { return b + ':' + (declared[b] || 'not_reached'); }).join('|');
+}
+
+/* ================= data ================= */
+/* A pasted payload has no sheet-side fields. Shape it so the same renderer
+   can draw it when the sheet cannot be reached. */
+function shapePasted(data) {
+  return (data.results || []).map(function (r) {
+    var c = r.components || {};
+    return {
+      key: 'unsaved:' + (r.board || '') + ':' + (r.url || r.title || ''),
+      candidate: CAND, board: r.board || 'LinkedIn', job_id: '',
+      title: r.title || '', employer: r.employer || '', location: r.location || '',
+      url: r.url || '', lane: r.lane || '', score: Number(r.score) || 0,
+      functional: c.functional, grade: c.grade, adjacency: c.adjacency, gates: c.gates,
+      why: r.why || '', gate_flags: r.gate_flags || [],
+      posted: r.posted || '', applicants: r.applicants || '',
+      first_seen: data.run_date || todayStr(), last_seen: data.run_date || todayStr(),
+      times_seen: 1, status: 'Open', status_date: '', notes: ''
+    };
+  });
+}
+
+function offlineRender(err) {
+  var cached = cacheRead(CAND);
+  if (cached && cached.payload && cached.payload.roles && cached.payload.roles.length) {
+    OFFLINE = true; STALE = cached.at;
+    ALL = cached.payload.roles;
+    LAST_RUN = cached.payload.last_run || LAST_RUN;
+    LAST_BOARD_STATES = cached.payload.board_states || LAST_BOARD_STATES;
+    render();
+    return;
+  }
+  if (PASTED) {
+    OFFLINE = true; STALE = null;
+    ALL = shapePasted(PASTED);
+    render();
+    return;
+  }
+  document.getElementById('out-loading').style.display = 'none';
+  document.getElementById('error-body').textContent = err.message +
+    ' Nothing is cached in this browser yet, so there is nothing to fall back to.';
+  document.getElementById('out-error').classList.add('visible');
+}
+
+function load() {
+  return Promise.all([
+    jsonp({ action: 'list', candidate: CAND }),
+    /* The resume point is read from the sheet, not from browser storage, so it
+       survives a different machine. A failure here is not fatal - the run simply
+       offers no resume option. */
+    jsonp({ action: 'runs', candidate: CAND }).catch(function () { return null; })
+  ]).then(function (res) {
+    var d = res[0], rr = res[1];
+    if (!d || !d.ok) throw new Error((d && d.error) || 'The sheet returned an error.');
+    OFFLINE = false; STALE = null;
+    ALL = d.roles || [];
+    var runs = (rr && rr.runs) || [];
+    LAST_BOARD_STATES = runs.length ? parseBoardStates(runs[runs.length - 1].boards) : null;
+    document.getElementById('out-error').classList.remove('visible');
+    cacheSave(CAND, { roles: ALL, last_run: LAST_RUN, board_states: LAST_BOARD_STATES });
+    render();
+  }).catch(offlineRender);
+}
+
+/* ================= wiring ================= */
+function wire() {
+  document.getElementById('brief-btn').addEventListener('click', function () {
+    openPreRun();
+  });
+
+  document.getElementById('pr-cancel').addEventListener('click', function () {
+    document.getElementById('prerun-ov').style.display = 'none';
+  });
+
+  document.getElementById('pr-go').addEventListener('click', function () {
+    RUN_OPTS.start = document.querySelector('#pr-start input:checked').value;
+    RUN_OPTS.wrap = document.querySelector('#pr-wrap input:checked').value;
+    START_PREF = RUN_OPTS.start;          // remembered
+    savePrefs();                          // wrap is deliberately not saved
+    document.getElementById('prerun-ov').style.display = 'none';
+    document.getElementById('brief-text').value = buildBrief();
+    var s = document.getElementById('brief-section');
+    s.style.display = '';
+    s.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  ['pr-start', 'pr-wrap'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () {
+      RUN_OPTS.start = document.querySelector('#pr-start input:checked').value;
+      RUN_OPTS.wrap = document.querySelector('#pr-wrap input:checked').value;
+      document.getElementById('pr-warn').style.display = RUN_OPTS.wrap === 'wrap' ? '' : 'none';
+      paintRunOrder();
+    });
+  });
+
+  document.getElementById('copy-brief').addEventListener('click', function () {
+    var btn = this, txt = document.getElementById('brief-text').value;
+    var done = function () {
+      btn.textContent = 'Copied'; btn.className = 'btn-copy done';
+      setTimeout(function () { btn.textContent = 'Copy'; btn.className = 'btn-copy'; }, 1800);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); });
+    else fallbackCopy(txt, done);
+  });
+
+  document.getElementById('load-btn').addEventListener('click', function () {
+    var s = document.getElementById('paste-section');
+    s.style.display = (s.style.display === 'none') ? '' : 'none';
+    if (s.style.display === '') s.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  document.getElementById('render-btn').addEventListener('click', function () {
+    var btn = this, raw = document.getElementById('paste-text').value.trim();
+    if (!raw) { toast('Nothing pasted', true); return; }
+    var data;
+    try { data = JSON.parse(raw.replace(/^```(json)?/i, '').replace(/```$/, '').trim()); }
+    catch (e) { toast('That is not valid JSON', true); return; }
+    if (!data.results || !data.results.length) { toast('No results in that payload', true); return; }
+
+    btn.textContent = 'Saving…'; btn.disabled = true;
+    data.action = 'upsert';
+    data.candidate = CAND;
+    data.run_date = data.run_date || todayStr();
+    PASTED = data;
+    post(data).then(function () {
+      LAST_RUN = {
+        run_date: data.run_date, read: data.read || data.results.length,
+        returned: data.results.length, note: data.note || '',
+        unscoreable: data.unscoreable || 0, reposts_skipped: data.reposts_skipped || 0
+      };
+      return new Promise(function (r) { setTimeout(r, 2500); });
+    }).then(load).then(function () {
+      btn.textContent = 'Save to sheet and render'; btn.disabled = false;
+      var landed = ALL.filter(function (r) { return r.first_seen === LAST_RUN.run_date; }).length;
+      toast(data.results.length + ' returned · ' + landed + ' new in the sheet');
+      document.getElementById('paste-section').style.display = 'none';
+    }).catch(function (err) {
+      btn.textContent = 'Save to sheet and render'; btn.disabled = false;
+      toast(err.message + ' Rendering the paste locally instead.', true);
+      offlineRender(err);
+    });
+  });
+
+  document.getElementById('confirm-btn').addEventListener('click', function () {
+    var btn = this;
+    if (OFFLINE) { toast('The sheet is unreachable - the run cannot be logged right now', true); return; }
+    var confirmed = document.querySelector('#confirm-radio input:checked').value === 'yes';
+    var boards = orderedRun(boardsWithAddress(getChecked('board-row')));
+    btn.textContent = 'Writing…'; btn.disabled = true;
+    jsonp({
+      action: 'run', candidate: CAND,
+      run_date: (LAST_RUN && LAST_RUN.run_date) || todayStr(),
+      boards: packBoardStates(boards),
+      geographies: getTags('geo-wrap').join('|'),
+      terms: getTags('role-wrap').join('|'),
+      floor: document.getElementById('floor').value,
+      read_count: (LAST_RUN && LAST_RUN.read) || 0,
+      returned_count: (LAST_RUN && LAST_RUN.returned) || 0,
+      above_floor: ALL.filter(function (r) {
+        return LAST_RUN && r.first_seen === LAST_RUN.run_date &&
+               r.score >= parseFloat(document.getElementById('floor').value);
+      }).length,
+      confirmed: confirmed ? '1' : '0',
+      note: document.getElementById('run-note').value.trim() || (LAST_RUN && LAST_RUN.note) || ''
+    }).then(function (d) {
+      btn.textContent = 'Write to the sheet'; btn.disabled = false;
+      if (d && d.ok) toast(confirmed ? 'Day confirmed · ' + d.run_id : 'Run logged · ' + d.run_id);
+      else toast((d && d.error) || 'Could not write the run', true);
+    }).catch(function (err) {
+      btn.textContent = 'Write to the sheet'; btn.disabled = false;
+      toast(err.message, true);
+    });
+  });
+
+  document.getElementById('exp-refresh').addEventListener('click', function () {
+    document.getElementById('out-loading').style.display = '';
+    document.getElementById('out-results').classList.remove('visible');
+    load();
+  });
+
+  var clearBtn = document.getElementById('exp-clear');
+  clearBtn.addEventListener('click', function () {
+    if (OFFLINE) { toast('The sheet is unreachable - nothing can be cleared right now', true); return; }
+    var open = ALL.filter(function (r) { return (r.status || 'Open') === 'Open'; }).length;
+    if (!open) { toast('Nothing on the board to clear'); return; }
+    if (!clearBtn.classList.contains('arm')) {
+      clearBtn.classList.add('arm');
+      clearBtn.textContent = 'Park all ' + open + ' as Cleared?';
+      setTimeout(function () {
+        clearBtn.classList.remove('arm');
+        clearBtn.textContent = 'Clear the board';
+      }, 5000);
+      return;
+    }
+    clearBtn.textContent = 'Clearing…';
+    jsonp({ action: 'clear', candidate: CAND }).then(function (d) {
+      clearBtn.classList.remove('arm');
+      clearBtn.textContent = 'Clear the board';
+      if (d && d.ok) { toast(d.cleared + ' parked as Cleared - still in the archive'); load(); }
+      else toast((d && d.error) || 'Could not clear the board', true);
+    }).catch(function (err) {
+      clearBtn.classList.remove('arm');
+      clearBtn.textContent = 'Clear the board';
+      toast(err.message, true);
+    });
+  });
+
+  document.getElementById('exp-copy').addEventListener('click', function () {
+    var btn = this;
+    var txt = ALL.filter(function (r) { return (r.status || 'Open') === 'Open'; })
+      .sort(function (a, b) { return boardRank(a.board) - boardRank(b.board) || b.score - a.score; })
+      .map(function (r) {
+        return r.score.toFixed(1) + '  ' + r.title + ' · ' + r.employer + ' · ' + r.location +
+          '  [' + r.board + ' · Lane ' + r.lane + ']\n    ' + r.url;
+      }).join('\n\n');
+    var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy all'; }, 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); });
+    else fallbackCopy(txt, done);
+  });
+
+  document.getElementById('offline-bar').addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'retry-btn') {
+      e.target.textContent = 'Trying…';
+      load();
+    }
+  });
+
+  var bc = document.getElementById('boards-container');
+  bc.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.getAttribute && t.getAttribute('data-showall')) { SHOW_ALL[t.getAttribute('data-showall')] = true; render(); }
+    if (t.getAttribute && t.getAttribute('data-hideall')) { SHOW_ALL[t.getAttribute('data-hideall')] = false; render(); }
+  });
+  bindStatus(bc, function (key, status) {
+    ALL.forEach(function (r) { if (r.key === key) { r.status = status; r.status_date = todayStr(); } });
+    if (status !== 'Open') setTimeout(render, 700);
+  });
+}
+
+function fallbackCopy(txt, cb) {
+  var ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); cb(); } catch (e) { toast('Copy failed', true); }
+  document.body.removeChild(ta);
+}
+
+/* ================= boot ================= */
+if (P) { paintChrome(); wire(); load(); }
+else { document.getElementById('out-loading').style.display = 'none'; }
+
+</script>
+</body>
+</html>
